@@ -19,15 +19,13 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r backend/requirements.txt
 
       - name: Lint
-        run: |
-          pip install ruff
-          ruff check src/ tests/
+        run: cd backend && ruff check src/ tests/
 
       - name: Test
-        run: pytest --tb=short
+        run: cd backend && pytest --tb=short
         env:
           DATABASE_URL: postgresql+asyncpg://firehose:firehose@localhost:5432/firehose
           REDIS_URL: redis://localhost:6379

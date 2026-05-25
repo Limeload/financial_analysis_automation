@@ -51,7 +51,7 @@ services:
 
   api:
     build:
-      context: .
+      context: ./backend
       target: api
     ports:
       - "8000:8000"
@@ -71,7 +71,7 @@ services:
 
   ingestion:
     build:
-      context: .
+      context: ./backend
       target: worker
     env_file: .env
     environment:
@@ -83,7 +83,7 @@ services:
 
   processor:
     build:
-      context: .
+      context: ./backend
       target: worker
     env_file: .env
     environment:
@@ -101,7 +101,7 @@ services:
 
   analysis:
     build:
-      context: .
+      context: ./backend
       target: worker
     env_file: .env
     environment:
@@ -116,12 +116,12 @@ services:
       kafka:
         condition: service_healthy
     deploy:
-      replicas: 2          # scale here to handle higher article volume
+      replicas: 2
     command: python -m src.analysis.consumer
 
   research:
     build:
-      context: .
+      context: ./backend
       target: worker
     env_file: .env
     environment:
@@ -130,6 +130,18 @@ services:
       postgres:
         condition: service_healthy
     command: python -m src.research.runner
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:8000
+      - NEXT_PUBLIC_API_KEY=${API_KEYS:-dev-secret-key-1}
+    depends_on:
+      - api
+    command: node server.js
 
 volumes:
   postgres_data:
