@@ -10,15 +10,27 @@ router = APIRouter(tags=["realtime"])
 logger = logging.getLogger(__name__)
 
 
-@router.websocket("/subscribe")
+@router.websocket(
+    "/subscribe",
+    name="Real-time article stream",
+)
 async def subscribe(
     websocket: WebSocket,
-    api_key: str = Query(...),
-    sector: str = Query(None),
+    api_key: str = Query(..., description="Your API key (passed as query param because WebSocket headers are not browser-accessible)"),
+    sector: str = Query(None, description="Optional sector filter. Only articles matching this sector are delivered."),
 ):
-    """Stream articles in real-time via WebSocket.
+    """
+    **WebSocket** — subscribe to the live article stream.
 
-    Connect with ?api_key=<your-key>. Optionally filter by ?sector=Technology.
+    Each message is a JSON object matching the `ArticleResponse` schema.
+
+    **Connect:**
+    ```
+    ws://localhost:8000/subscribe?api_key=your-key
+    ws://localhost:8000/subscribe?api_key=your-key&sector=Technology
+    ```
+
+    Closes with code `1008` if the API key is invalid.
     """
     if api_key not in settings.api_key_set:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)

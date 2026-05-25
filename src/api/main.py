@@ -9,12 +9,55 @@ from src.models.schemas import HealthResponse
 
 logging.basicConfig(level=settings.log_level)
 
+_DESCRIPTION = """
+Market Firehose ingests financial news from multiple sources, enriches each article
+with LLM-extracted metadata (sector, named-entity tags, summary), and delivers them
+via REST or a live WebSocket stream.
+
+## Authentication
+
+All endpoints except `/health` require an **`X-API-Key`** header:
+
+```
+X-API-Key: your-api-key
+```
+
+## Real-time streaming
+
+Connect to **`WS /subscribe`** to receive articles as they arrive.
+Optional query params: `api_key` (required), `sector` (filter by sector).
+
+## Data flow
+
+```
+Feed adapters → Kafka → LLM parser → PostgreSQL + Redis pub/sub → this API
+```
+"""
+
+_TAGS = [
+    {
+        "name": "articles",
+        "description": "Query and ingest articles. Supports filtering by sector and source with pagination.",
+    },
+    {
+        "name": "realtime",
+        "description": "WebSocket endpoint for live article streaming via Redis pub/sub.",
+    },
+    {
+        "name": "ops",
+        "description": "Operational endpoints — health checks for Kafka, PostgreSQL, and Redis.",
+    },
+]
+
 app = FastAPI(
     title="Market Firehose",
-    description="Real-time financial news ingestion and streaming API",
+    description=_DESCRIPTION,
     version="0.1.0",
+    openapi_tags=_TAGS,
     docs_url="/docs",
     redoc_url="/redoc",
+    contact={"name": "Market Firehose", "url": "https://github.com/your-org/market-firehose"},
+    license_info={"name": "MIT"},
 )
 
 app.add_middleware(
@@ -28,7 +71,13 @@ app.include_router(articles.router)
 app.include_router(websocket.router)
 
 
-@app.get("/health", response_model=HealthResponse, tags=["ops"])
+@app.get(
+    "/health",
+    response_model=HealthResponse,
+    tags=["ops"],
+    summary="Service health check",
+    description="Returns the connectivity status of Kafka, PostgreSQL, and Redis. Does not require authentication.",
+)
 async def health():
     kafka_ok = await _check_kafka()
     pg_ok = await _check_postgres()
