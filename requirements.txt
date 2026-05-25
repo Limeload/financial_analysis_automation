@@ -38,5 +38,8 @@ pytest-asyncio==0.24.0
 pytest-mock==3.14.0
 httpx  # also used as async test client
 
+# Stock data
+yfinance==0.2.50
+
 # Load testing
 locust==2.31.8

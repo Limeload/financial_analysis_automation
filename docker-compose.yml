@@ -99,5 +99,17 @@ services:
         condition: service_healthy
     command: python -m src.processing.consumer
 
+  research:
+    build:
+      context: .
+      target: worker
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://firehose:firehose@postgres:5432/firehose
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: python -m src.research.runner
+
 volumes:
   postgres_data:
