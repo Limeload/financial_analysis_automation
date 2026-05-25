@@ -196,37 +196,6 @@ locust -f tests/locustfile.py --host http://localhost:8000 \
        --users 20 --spawn-rate 5 --run-time 2m --headless
 ```
 
-### Project structure
-
-```
-src/
-├── config.py               # Pydantic-settings config
-├── models/
-│   ├── article.py          # SQLAlchemy ORM models
-│   └── schemas.py          # Pydantic v2 schemas
-├── ingestion/
-│   ├── base.py             # FeedAdapter ABC
-│   ├── thenewsapi.py       # TheNewsAPI adapter
-│   ├── rss.py              # Generic RSS/Atom adapter
-│   ├── kafka_producer.py   # aiokafka producer wrapper
-│   └── runner.py           # Ingestion service entry point
-├── processing/
-│   ├── prompts.py          # LLM extraction prompt
-│   ├── llm_parser.py       # Claude / OpenAI parser
-│   └── consumer.py         # Kafka consumer entry point
-├── storage/
-│   ├── database.py         # Async SQLAlchemy + upsert helpers
-│   └── redis_client.py     # Redis publisher / subscriber
-└── api/
-    ├── main.py             # FastAPI app + /health
-    ├── dependencies.py     # API key auth
-    └── routers/
-        ├── articles.py     # REST endpoints
-        └── websocket.py    # WS /subscribe
-```
-
----
-
 ## Contributing
 
 Contributions are welcome.
