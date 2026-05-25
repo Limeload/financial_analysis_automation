@@ -1,8 +1,8 @@
-import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from src.ingestion.thenewsapi import TheNewsAPIAdapter
-from src.ingestion.rss import RSSAdapter
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
+from src.ingestion.thenewsapi import TheNewsAPIAdapter
 
 THENEWS_RESPONSE = {
     "data": [

@@ -1,6 +1,7 @@
 import abc
 import asyncio
 import logging
+
 from src.models.schemas import RawArticle
 
 logger = logging.getLogger(__name__)

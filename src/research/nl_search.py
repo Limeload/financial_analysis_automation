@@ -9,9 +9,8 @@ Flow:
 """
 import json
 import logging
-from typing import Optional
 
-from sqlalchemy import select, or_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -66,10 +65,10 @@ class NLSearchEngine:
     ) -> dict:
         parsed = await self._parse_query(query)
         tickers: list[str] = parsed.get("tickers") or []
-        sector: Optional[str] = parsed.get("sector")
-        industry_hint: Optional[str] = parsed.get("industry_hint")
-        min_cap: Optional[int] = parsed.get("min_market_cap")
-        max_cap: Optional[int] = parsed.get("max_market_cap")
+        sector: str | None = parsed.get("sector")
+        industry_hint: str | None = parsed.get("industry_hint")
+        min_cap: int | None = parsed.get("min_market_cap")
+        max_cap: int | None = parsed.get("max_market_cap")
 
         # Fetch any tickers not yet in the DB
         if tickers:
@@ -127,11 +126,11 @@ class NLSearchEngine:
 
 async def _query_stocks(
     session: AsyncSession,
-    tickers: Optional[list[str]],
-    sector: Optional[str],
-    industry_hint: Optional[str],
-    min_market_cap: Optional[int],
-    max_market_cap: Optional[int],
+    tickers: list[str] | None,
+    sector: str | None,
+    industry_hint: str | None,
+    min_market_cap: int | None,
+    max_market_cap: int | None,
     limit: int,
 ) -> list[dict]:
     q = (
@@ -156,7 +155,7 @@ async def _query_stocks(
     return [_row_to_dict(stock, metrics) for stock, metrics in rows]
 
 
-def _row_to_dict(stock: Stock, metrics: Optional[StockMetrics]) -> dict:
+def _row_to_dict(stock: Stock, metrics: StockMetrics | None) -> dict:
     return {
         "ticker": stock.ticker,
         "name": stock.name,

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel, Field
 
 _EXAMPLE_ARTICLE = {
@@ -29,18 +29,18 @@ class RawArticle(BaseModel):
     source: str
     url: str
     title: str
-    body: Optional[str] = None
-    publisher: Optional[str] = None
-    author: Optional[str] = None
-    published_at: Optional[datetime] = None
-    external_id: Optional[str] = None
+    body: str | None = None
+    publisher: str | None = None
+    author: str | None = None
+    published_at: datetime | None = None
+    external_id: str | None = None
 
 
 # ── LLM-enriched article ─────────────────────────────────────────────────────
 
 class ParsedArticle(RawArticle):
-    summary: Optional[str] = None
-    sector: Optional[str] = None
+    summary: str | None = None
+    sector: str | None = None
     tags: list[str] = Field(default_factory=list)
 
 
@@ -50,10 +50,10 @@ class ArticleCreate(BaseModel):
     source: str = Field(description="Feed source identifier, e.g. `thenewsapi`, `rss`, `bloomberg`")
     url: str = Field(description="Canonical article URL — used for deduplication")
     title: str = Field(description="Article headline")
-    body: Optional[str] = Field(None, description="Full article text or excerpt")
-    publisher: Optional[str] = Field(None, description="Publishing outlet name")
-    author: Optional[str] = Field(None, description="Byline author name")
-    published_at: Optional[datetime] = Field(None, description="Original publication timestamp (ISO 8601)")
+    body: str | None = Field(None, description="Full article text or excerpt")
+    publisher: str | None = Field(None, description="Publishing outlet name")
+    author: str | None = Field(None, description="Byline author name")
+    published_at: datetime | None = Field(None, description="Original publication timestamp (ISO 8601)")
 
     model_config = {
         "json_schema_extra": {
@@ -75,12 +75,12 @@ class ArticleResponse(BaseModel):
     source: str = Field(description="Feed source that produced this article")
     url: str = Field(description="Canonical article URL")
     title: str = Field(description="Article headline")
-    summary: Optional[str] = Field(None, description="LLM-generated 2-3 sentence summary")
-    publisher: Optional[str] = Field(None, description="Publishing outlet")
-    author: Optional[str] = Field(None, description="Byline author")
-    sector: Optional[str] = Field(None, description=f"LLM-classified sector. One of: {', '.join(SECTORS)}")
+    summary: str | None = Field(None, description="LLM-generated 2-3 sentence summary")
+    publisher: str | None = Field(None, description="Publishing outlet")
+    author: str | None = Field(None, description="Byline author")
+    sector: str | None = Field(None, description=f"LLM-classified sector. One of: {', '.join(SECTORS)}")
     tags: list[str] = Field(default_factory=list, description="LLM-extracted named entities and keywords")
-    published_at: Optional[datetime] = Field(None, description="Original publication timestamp")
+    published_at: datetime | None = Field(None, description="Original publication timestamp")
     created_at: datetime = Field(description="Timestamp when the article entered the pipeline")
 
     model_config = {

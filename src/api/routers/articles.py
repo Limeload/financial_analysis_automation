@@ -1,10 +1,15 @@
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.api.dependencies import require_api_key
-from src.models.schemas import ArticleCreate, ArticleListResponse, ArticleResponse, ParsedArticle, SECTORS
-from src.storage.database import get_session, get_articles, save_article
+from src.models.schemas import (
+    SECTORS,
+    ArticleCreate,
+    ArticleListResponse,
+    ArticleResponse,
+    ParsedArticle,
+)
+from src.storage.database import get_articles, get_session, save_article
 
 router = APIRouter(prefix="/articles", tags=["articles"])
 
@@ -50,8 +55,8 @@ async def ingest_article(
     responses=_AUTH_ERR,
 )
 async def list_articles(
-    sector: Optional[str] = Query(None, description="Filter by sector", examples=["Technology", "Finance"]),
-    source: Optional[str] = Query(None, description="Filter by feed source identifier", examples=["thenewsapi", "bloomberg"]),
+    sector: str | None = Query(None, description="Filter by sector", examples=["Technology", "Finance"]),
+    source: str | None = Query(None, description="Filter by feed source identifier", examples=["thenewsapi", "bloomberg"]),
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
     _: str = Depends(require_api_key),
@@ -79,6 +84,7 @@ async def get_article(
     _: str = Depends(require_api_key),
 ):
     from sqlalchemy import select
+
     from src.models.article import Article
     async with get_session() as session:
         result = await session.execute(

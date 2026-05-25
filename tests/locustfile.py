@@ -5,7 +5,7 @@ Run:
     locust -f tests/locustfile.py --host http://localhost:8000 \
            --users 20 --spawn-rate 5 --run-time 2m --headless
 """
-from locust import HttpUser, task, between
+from locust import HttpUser, between, task
 
 
 class FirehoseUser(HttpUser):

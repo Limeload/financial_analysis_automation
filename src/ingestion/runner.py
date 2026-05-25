@@ -8,8 +8,8 @@ import sys
 
 from src.config import settings
 from src.ingestion.kafka_producer import ArticleProducer
-from src.ingestion.thenewsapi import TheNewsAPIAdapter
 from src.ingestion.rss import RSSAdapter
+from src.ingestion.thenewsapi import TheNewsAPIAdapter
 
 logging.basicConfig(level=settings.log_level, stream=sys.stdout,
                     format="%(asctime)s %(name)s %(levelname)s %(message)s")

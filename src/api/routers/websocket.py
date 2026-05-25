@@ -1,7 +1,7 @@
 import json
 import logging
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, status
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect, status
 
 from src.config import settings
 from src.storage.redis_client import RedisSubscriber

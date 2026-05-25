@@ -3,14 +3,14 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routers import articles, websocket, stocks, analysis
+from src.api.routers import analysis, articles, stocks, websocket
 from src.config import settings
 from src.models.schemas import HealthResponse
 
 logging.basicConfig(level=settings.log_level)
 
 _DESCRIPTION = """
-Market Firehose ingests financial news from multiple sources, enriches each article
+MarketPulse ingests financial news from multiple sources, enriches each article
 with LLM-extracted metadata (sector, named-entity tags, summary), and delivers them
 via REST or a live WebSocket stream.
 
@@ -66,13 +66,13 @@ _TAGS = [
 ]
 
 app = FastAPI(
-    title="Market Firehose",
+    title="MarketPulse",
     description=_DESCRIPTION,
     version="0.1.0",
     openapi_tags=_TAGS,
     docs_url="/docs",
     redoc_url="/redoc",
-    contact={"name": "Market Firehose", "url": "https://github.com/your-org/market-firehose"},
+    contact={"name": "MarketPulse", "url": "https://github.com/your-org/marketpulse"},
     license_info={"name": "MIT"},
 )
 
@@ -121,8 +121,9 @@ async def _check_kafka() -> bool:
 
 async def _check_postgres() -> bool:
     try:
-        from src.storage.database import get_session
         from sqlalchemy import text
+
+        from src.storage.database import get_session
         async with get_session() as session:
             await session.execute(text("SELECT 1"))
         return True

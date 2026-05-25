@@ -1,8 +1,10 @@
 import json
 import logging
+
 from aiokafka import AIOKafkaProducer
-from src.models.schemas import RawArticle
+
 from src.config import settings
+from src.models.schemas import RawArticle
 
 logger = logging.getLogger(__name__)
 

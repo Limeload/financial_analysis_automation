@@ -1,8 +1,15 @@
-from datetime import datetime
 from sqlalchemy import (
-    Column, String, Text, DateTime, BigInteger, Numeric, Index,
-    ForeignKey, func,
+    BigInteger,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Numeric,
+    String,
+    Text,
+    func,
 )
+
 from src.models.article import Base
 
 

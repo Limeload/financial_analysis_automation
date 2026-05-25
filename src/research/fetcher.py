@@ -5,12 +5,11 @@ Fetches stock data from two sources:
 """
 import asyncio
 import logging
-from typing import Optional
 
 import aiohttp
 import yfinance as yf
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.stock import Stock, StockMetrics
 
@@ -42,7 +41,6 @@ async def upsert_universe(session: AsyncSession, rows: list[dict]) -> int:
         ticker = (row.get("symbol") or "").strip().upper()
         if not ticker:
             continue
-        market_cap_raw = row.get("marketCap") or ""
         records.append({
             "ticker": ticker,
             "name": (row.get("name") or "").strip(),

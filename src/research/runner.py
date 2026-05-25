@@ -3,11 +3,12 @@ import asyncio
 import logging
 import sys
 
-from src.config import settings
-from src.research.fetcher import fetch_exchange_list, upsert_universe, bulk_update_metrics
-from src.storage.database import get_session
 from sqlalchemy import select, text
+
+from src.config import settings
 from src.models.stock import Stock
+from src.research.fetcher import bulk_update_metrics, fetch_exchange_list, upsert_universe
+from src.storage.database import get_session
 
 logging.basicConfig(level=settings.log_level, stream=sys.stdout,
                     format="%(asctime)s %(name)s %(levelname)s %(message)s")

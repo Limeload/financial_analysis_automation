@@ -1,7 +1,16 @@
 from sqlalchemy import (
-    Column, Integer, String, Text, Numeric, DateTime, ForeignKey, Index,
-    UniqueConstraint, func,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
 )
+
 from src.models.article import Base
 
 EVENT_TYPES = [

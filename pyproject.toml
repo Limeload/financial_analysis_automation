@@ -1,0 +1,41 @@
+[project]
+name = "marketpulse"
+version = "0.1.0"
+description = "Real-time financial news intelligence platform"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Shraddha Rao" }]
+requires-python = ">=3.12"
+keywords = ["finance", "news", "llm", "kafka", "fastapi", "real-time"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-org/marketpulse"
+Issues   = "https://github.com/your-org/marketpulse/issues"
+Changelog = "https://github.com/your-org/marketpulse/blob/main/CHANGELOG.md"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+ignore = [
+    "E501",   # line too long — handled by formatter
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]

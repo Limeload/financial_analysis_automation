@@ -17,7 +17,7 @@ import redis.asyncio as aioredis
 from aiokafka import AIOKafkaConsumer
 
 from src.analysis.processor import ArticleAnalyzer
-from src.analysis.store import save_analysis, publish_analysis
+from src.analysis.store import publish_analysis, save_analysis
 from src.config import settings
 from src.storage.database import get_session
 

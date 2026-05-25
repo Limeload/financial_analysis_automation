@@ -1,7 +1,6 @@
 """Metric-based stock screener — pure DB query, no LLM involved."""
-from typing import Optional
 
-from sqlalchemy import select, func, asc, desc
+from sqlalchemy import asc, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.stock import Stock, StockMetrics
@@ -21,18 +20,18 @@ SORT_FIELDS = {
 async def screen(
     session: AsyncSession,
     *,
-    sector: Optional[str] = None,
-    industry: Optional[str] = None,
-    exchange: Optional[str] = None,
-    min_market_cap: Optional[int] = None,
-    max_market_cap: Optional[int] = None,
-    min_volume: Optional[int] = None,
-    max_volume: Optional[int] = None,
-    min_price: Optional[float] = None,
-    max_price: Optional[float] = None,
-    min_pe: Optional[float] = None,
-    max_pe: Optional[float] = None,
-    min_dividend_yield: Optional[float] = None,
+    sector: str | None = None,
+    industry: str | None = None,
+    exchange: str | None = None,
+    min_market_cap: int | None = None,
+    max_market_cap: int | None = None,
+    min_volume: int | None = None,
+    max_volume: int | None = None,
+    min_price: float | None = None,
+    max_price: float | None = None,
+    min_pe: float | None = None,
+    max_pe: float | None = None,
+    min_dividend_yield: float | None = None,
     sort_by: str = "market_cap",
     sort_dir: str = "desc",
     page: int = 1,

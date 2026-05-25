@@ -12,7 +12,6 @@ import asyncio
 import json
 import logging
 import re
-from typing import Optional
 
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -38,8 +37,8 @@ class ArticleAnalyzer:
         self,
         article_id: int,
         title: str,
-        body: Optional[str] = None,
-        summary: Optional[str] = None,
+        body: str | None = None,
+        summary: str | None = None,
     ) -> dict:
         async with self._sem:
             return await self._run(article_id, title, body, summary)
@@ -49,8 +48,8 @@ class ArticleAnalyzer:
         self,
         article_id: int,
         title: str,
-        body: Optional[str],
-        summary: Optional[str],
+        body: str | None,
+        summary: str | None,
     ) -> dict:
         user_msg = analysis_user(title, body, summary)
         raw = await self._call(user_msg)

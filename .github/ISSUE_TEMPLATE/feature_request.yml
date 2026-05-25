@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest an improvement or new capability
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the use case or pain point.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How should it work? API shape, config, behaviour.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you thought about.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which layer does this affect?
+      options:
+        - Ingestion (feed adapters)
+        - Processing (LLM enrichment)
+        - Analysis (sentiment / event classification)
+        - Research (stock search / screener)
+        - API (REST / WebSocket)
+        - Infrastructure (Docker, Kafka, migrations)
+        - Documentation
+        - Other
+    validations:
+      required: true

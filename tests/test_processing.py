@@ -1,10 +1,10 @@
 import json
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 
 from src.models.schemas import RawArticle
 from src.processing.llm_parser import LLMParser, _safe_parse
-
 
 RAW = RawArticle(
     source="thenewsapi",

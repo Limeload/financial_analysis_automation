@@ -1,10 +1,10 @@
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Optional
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.config import settings
 from src.models.article import Article, ArticleTag
@@ -23,7 +23,7 @@ async def get_session() -> AsyncIterator[AsyncSession]:
             yield session
 
 
-async def save_article(session: AsyncSession, parsed: ParsedArticle) -> Optional[int]:
+async def save_article(session: AsyncSession, parsed: ParsedArticle) -> int | None:
     """Upsert an article. Returns the article ID, or None if it was a duplicate."""
     stmt = (
         insert(Article)
@@ -61,12 +61,12 @@ async def save_article(session: AsyncSession, parsed: ParsedArticle) -> Optional
 
 async def get_articles(
     session: AsyncSession,
-    sector: Optional[str] = None,
-    source: Optional[str] = None,
+    sector: str | None = None,
+    source: str | None = None,
     page: int = 1,
     page_size: int = 20,
 ) -> tuple[list[Article], int]:
-    from sqlalchemy import func, desc
+    from sqlalchemy import desc, func
 
     base = select(Article)
     count_q = select(func.count()).select_from(Article)

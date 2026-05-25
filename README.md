@@ -1,33 +1,45 @@
-# Market Firehose
+# MarketPulse
 
-A real-time financial news ingestion and streaming pipeline. Pulls articles from multiple sources, enriches them with LLM-extracted metadata (sector, tags, summary), stores them in PostgreSQL, and streams them live over WebSocket.
+[![CI](https://github.com/your-org/marketpulse/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/marketpulse/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+
+A real-time financial news intelligence platform. Ingests articles from multiple sources, enriches them with LLM-extracted metadata, performs per-company sentiment analysis and event classification, and delivers everything via REST or live WebSocket stream.
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  Ingestion Layer          Processing Layer                       │
-│                                                                  │
-│  TheNewsAPI ──┐                                                  │
-│  RSS feeds  ──┼──► Kafka (raw-articles) ──► LLM Parser          │
-│  (add more)  ─┘         │                      │                │
-│                          │               ┌──────┴──────┐        │
-│                          │               ▼             ▼        │
-│                       Storage Layer   PostgreSQL     Redis       │
-│                                          │         pub/sub       │
-│                                          │             │        │
-│                       API Layer       GET /articles  WS /sub    │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│  Ingestion Layer              Processing Layer                        │
+│                                                                       │
+│  TheNewsAPI ──┐                                                       │
+│  RSS feeds  ──┼──► Kafka (raw-articles) ──► Enrichment (LLM)        │
+│  (add more) ──┘         │                      │                     │
+│                          │               ┌──────┴──────┐             │
+│                          │               ▼             ▼             │
+│                       Storage Layer   PostgreSQL     Redis pub/sub   │
+│                                          │             │             │
+│                          ┌───────────────┘             │             │
+│                          ▼                             │             │
+│  Analysis Layer   Kafka (processed-articles)           │             │
+│                          │                             │             │
+│                          ▼                             ▼             │
+│                   Market Analysis (LLM) ──► Redis (article-analyses) │
+│                   Companies + Sentiment                │             │
+│                   Event Classification                 │             │
+│                                                        │             │
+│  API Layer     REST /articles  /analysis  /stocks   WS /stream      │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 Data flows through 4 independently scalable layers:
 
-1. **Ingestion** — async feed adapters push raw articles to a Kafka topic. Adding a new source = one new adapter class.
-2. **Processing** — Kafka consumers call an LLM (Claude / GPT-4) to extract summary, sector, and named-entity tags. Output is a validated Pydantic event.
-3. **Storage** — structured events are upserted into PostgreSQL and published to a Redis channel for real-time subscribers.
-4. **API** — FastAPI exposes REST endpoints and a WebSocket stream, documented with auto-generated Swagger UI.
+1. **Ingestion** — async feed adapters push raw articles to Kafka. Adding a source = one new adapter class.
+2. **Processing** — Kafka consumers call an LLM to extract summary, sector, and tags. Structured events written to PostgreSQL + Redis.
+3. **Analysis** — second LLM pass per article: identifies mentioned companies, scores sentiment (−1 to +1), and classifies 18 event types. Runs concurrently at scale with prompt caching.
+4. **API** — FastAPI exposes REST, a stock screener + NL search, and two real-time WebSocket streams.
 
 ---
 
@@ -41,6 +53,7 @@ Data flows through 4 independently scalable layers:
 | Real-time cache | Redis 7 pub/sub |
 | LLM | Anthropic Claude (primary) / OpenAI GPT-4 (fallback) |
 | News feeds | TheNewsAPI + RSS |
+| Stock data | Yahoo Finance (yfinance) + NASDAQ screener |
 | Async runtime | asyncio / aiohttp / aiokafka |
 | Containerization | Docker + Compose |
 | Migrations | Alembic |
@@ -55,83 +68,82 @@ Data flows through 4 independently scalable layers:
 - Docker & Docker Compose
 - Python 3.12+
 - A [TheNewsAPI](https://www.thenewsapi.com/) token (free tier works)
-- An [Anthropic API key](https://console.anthropic.com/) (or OpenAI key)
+- An [Anthropic API key](https://console.anthropic.com/)
 
 ### 1. Clone and configure
 
 ```bash
-git clone https://github.com/your-org/market-firehose.git
-cd market-firehose
+git clone https://github.com/your-org/marketpulse.git
+cd marketpulse
 cp .env.example .env
-# Edit .env — fill in THENEWSAPI_KEY and ANTHROPIC_API_KEY (minimum)
+# Edit .env — fill in THENEWSAPI_KEY and ANTHROPIC_API_KEY at minimum
 ```
 
 ### 2. Start infrastructure
 
 ```bash
-docker compose up -d postgres redis kafka
-# Wait ~15s for Kafka to be ready, then verify:
-docker compose ps
+make up
+# or: docker compose up -d postgres redis kafka
 ```
 
 ### 3. Run database migrations
 
 ```bash
-pip install -r requirements.txt
-alembic upgrade head
+make install
+make migrate
 ```
 
 ### 4. Start services
 
 ```bash
-# Option A — all services via Docker
+# All services via Docker:
 docker compose up
 
-# Option B — run locally (useful for development)
-uvicorn src.api.main:app --reload                # API on :8000
-python -m src.ingestion.runner                   # ingestion workers
-python -m src.processing.consumer                # LLM processor
+# Or individually for local development:
+make dev          # API on :8000
+make run-ingest   # ingestion workers
+make run-process  # LLM processor
+make run-analysis # market analysis
 ```
 
 ### 5. Verify
 
-```
-GET  http://localhost:8000/health
-GET  http://localhost:8000/docs       ← Swagger UI
+```bash
+curl http://localhost:8000/health
+# Open http://localhost:8000/docs for the full Swagger UI
 ```
 
 ---
 
 ## API Reference
 
-All endpoints (except `/health`) require the `X-API-Key` header.
+All endpoints except `/health` require the `X-API-Key` header.
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/health` | Service health (Kafka, Postgres, Redis) |
-| `POST` | `/articles` | Manually ingest a single article |
-| `GET` | `/articles` | List/filter articles (sector, source, pagination) |
+| `GET` | `/health` | Dependency health check |
+| `POST` | `/articles` | Manually ingest an article |
+| `GET` | `/articles` | List / filter articles |
 | `GET` | `/articles/{id}` | Get article by ID |
 | `WS` | `/subscribe` | Real-time article stream |
+| `GET` | `/analysis/articles/{id}` | Event type + per-company sentiment |
+| `GET` | `/analysis/companies/{ticker}/sentiment` | Sentiment feed for a ticker |
+| `GET` | `/analysis/companies/{ticker}/summary` | Aggregated sentiment score |
+| `GET` | `/analysis/events` | Browse events by type |
+| `WS` | `/analysis/stream` | Live analysis stream |
+| `GET` | `/stocks/search?q=...` | Natural-language stock search |
+| `GET` | `/stocks` | Metric-based stock screener |
+| `GET` | `/stocks/{ticker}` | Stock detail + metrics |
+| `POST` | `/stocks/refresh` | Trigger NYSE universe refresh |
 
-**Filter examples**
-
-```bash
-# List Technology articles, page 2
-curl -H "X-API-Key: dev-secret-key-1" \
-  "http://localhost:8000/articles?sector=Technology&page=2&page_size=10"
-
-# WebSocket stream filtered to Finance
-wscat -c "ws://localhost:8000/subscribe?api_key=dev-secret-key-1&sector=Finance"
-```
-
-**Swagger UI:** `http://localhost:8000/docs`
+**Swagger UI:** `http://localhost:8000/docs`  
+**ReDoc:** `http://localhost:8000/redoc`
 
 ---
 
 ## Adding a Feed Source
 
-1. Create a new file in [src/ingestion/](src/ingestion/) that subclasses `FeedAdapter`:
+Create a subclass of `FeedAdapter` and register it in the runner — that's all:
 
 ```python
 # src/ingestion/my_source.py
@@ -142,70 +154,104 @@ class MySourceAdapter(FeedAdapter):
     source_name = "my-source"
 
     async def fetch(self) -> list[RawArticle]:
-        # fetch and return articles
-        ...
+        ...  # fetch and return articles
 ```
-
-2. Register it in [src/ingestion/runner.py](src/ingestion/runner.py):
 
 ```python
+# src/ingestion/runner.py  — add one line
 from src.ingestion.my_source import MySourceAdapter
-
-adapters = [
-    ...,
-    MySourceAdapter(),
-]
+adapters = [..., MySourceAdapter()]
 ```
-
-That's it. The adapter will be polled on `INGESTION_INTERVAL_SECONDS` and its articles will flow through the rest of the pipeline automatically.
 
 ---
 
 ## Configuration
 
-All configuration is via environment variables. See [.env.example](.env.example) for the full list.
+All config is via environment variables. See [.env.example](.env.example).
 
 | Variable | Default | Description |
 |---|---|---|
 | `DATABASE_URL` | `postgresql+asyncpg://...` | Async PostgreSQL DSN |
-| `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
+| `REDIS_URL` | `redis://localhost:6379` | Redis URL |
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9094` | Kafka brokers |
 | `THENEWSAPI_KEY` | — | TheNewsAPI token |
 | `ANTHROPIC_API_KEY` | — | Anthropic API key |
 | `LLM_PROVIDER` | `anthropic` | `anthropic` or `openai` |
 | `LLM_MODEL` | `claude-sonnet-4-6` | Model ID |
 | `API_KEYS` | `dev-secret-key-1` | Comma-separated valid API keys |
-| `INGESTION_INTERVAL_SECONDS` | `60` | Feed polling interval |
+| `ANALYSIS_CONCURRENCY` | `20` | Concurrent LLM calls per analysis worker |
 
 ---
 
 ## Development
 
-### Running tests
-
 ```bash
-pytest
+make install    # pip install -r requirements.txt
+make test       # pytest
+make lint       # ruff check
+make up         # start infra (Kafka, Redis, Postgres)
+make migrate    # alembic upgrade head
+make dev        # uvicorn with --reload
 ```
 
-### Load testing (Locust)
-
-Targets 100 articles/min throughput:
+### Load testing
 
 ```bash
-locust -f tests/locustfile.py --host http://localhost:8000 \
-       --users 20 --spawn-rate 5 --run-time 2m --headless
+make load-test
+# locust -f tests/locustfile.py --host http://localhost:8000 \
+#        --users 20 --spawn-rate 5 --run-time 2m --headless
 ```
+
+### Project structure
+
+```
+src/
+├── config.py               # Pydantic-settings
+├── models/
+│   ├── article.py          # SQLAlchemy ORM — articles, tags, api_keys
+│   ├── analysis.py         # SQLAlchemy ORM — analyses, company sentiments
+│   ├── stock.py            # SQLAlchemy ORM — stocks, metrics
+│   └── schemas.py          # Pydantic v2 request/response schemas
+├── ingestion/
+│   ├── base.py             # FeedAdapter ABC
+│   ├── thenewsapi.py       # TheNewsAPI adapter
+│   ├── rss.py              # Generic RSS/Atom adapter
+│   ├── kafka_producer.py   # aiokafka producer wrapper
+│   └── runner.py           # Ingestion service entry point
+├── processing/
+│   ├── prompts.py          # Article enrichment prompt
+│   ├── llm_parser.py       # Enrichment LLM wrapper
+│   └── consumer.py         # Kafka consumer → enrichment → DB + Redis
+├── analysis/
+│   ├── prompts.py          # Market analysis prompt (prompt-cached)
+│   ├── processor.py        # Analysis LLM wrapper (semaphore + retry)
+│   ├── store.py            # Persist analysis + publish to Redis
+│   └── consumer.py         # High-throughput Kafka consumer
+├── research/
+│   ├── fetcher.py          # NASDAQ screener + yfinance enrichment
+│   ├── nl_search.py        # NL query → Claude → stock results
+│   ├── screener.py         # Metric-based DB screener
+│   └── runner.py           # Universe + metrics refresh service
+└── api/
+    ├── main.py             # FastAPI app
+    ├── dependencies.py     # API key auth
+    └── routers/
+        ├── articles.py     # /articles
+        ├── websocket.py    # WS /subscribe
+        ├── analysis.py     # /analysis
+        └── stocks.py       # /stocks
+```
+
+---
 
 ## Contributing
 
-Contributions are welcome.
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feat/my-feature`)
-3. Commit your changes
+3. Make your changes and add tests
 4. Open a pull request
-
-Please keep pull requests focused — one feature or fix per PR.
 
 ---
 

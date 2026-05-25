@@ -1,14 +1,13 @@
 import json
 import logging
-from typing import Optional
+from datetime import UTC
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
-from sqlalchemy import select, func, desc, and_
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import and_, desc, func, select
 
 from src.api.dependencies import require_api_key
 from src.config import settings
-from src.models.analysis import ArticleAnalysis, ArticleCompanySentiment, EVENT_TYPES
+from src.models.analysis import EVENT_TYPES, ArticleAnalysis, ArticleCompanySentiment
 from src.storage.database import get_session
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
@@ -70,13 +69,13 @@ async def get_article_analysis(
 async def get_company_sentiment(
     ticker: str,
     days: int = Query(7, ge=1, le=90, description="Look-back window in days"),
-    sentiment: Optional[str] = Query(None, description="Filter: positive | negative | neutral"),
+    sentiment: str | None = Query(None, description="Filter: positive | negative | neutral"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     _: str = Depends(require_api_key),
 ):
-    from datetime import datetime, timedelta, timezone
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    from datetime import datetime, timedelta
+    since = datetime.now(UTC) - timedelta(days=days)
     ticker = ticker.upper()
 
     async with get_session() as session:
@@ -139,8 +138,8 @@ async def get_company_summary(
     days: int = Query(7, ge=1, le=90),
     _: str = Depends(require_api_key),
 ):
-    from datetime import datetime, timedelta, timezone
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    from datetime import datetime, timedelta
+    since = datetime.now(UTC) - timedelta(days=days)
     ticker = ticker.upper()
 
     async with get_session() as session:
@@ -186,14 +185,14 @@ async def get_company_summary(
     responses=_AUTH,
 )
 async def list_events(
-    event_type: Optional[str] = Query(None, description="Event type filter"),
+    event_type: str | None = Query(None, description="Event type filter"),
     days: int = Query(1, ge=1, le=30),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     _: str = Depends(require_api_key),
 ):
-    from datetime import datetime, timedelta, timezone
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    from datetime import datetime, timedelta
+    since = datetime.now(UTC) - timedelta(days=days)
 
     async with get_session() as session:
         q = select(ArticleAnalysis).where(ArticleAnalysis.processed_at >= since)
@@ -246,8 +245,8 @@ async def list_events(
 async def analysis_stream(
     websocket: WebSocket,
     api_key: str = Query(..., description="Your API key"),
-    ticker: Optional[str] = Query(None, description="Filter by company ticker"),
-    event_type: Optional[str] = Query(None, description="Filter by event type"),
+    ticker: str | None = Query(None, description="Filter by company ticker"),
+    event_type: str | None = Query(None, description="Filter by event type"),
 ):
     """
     **WebSocket** — live stream of article analyses as they are produced.

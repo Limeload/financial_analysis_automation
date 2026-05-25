@@ -1,11 +1,10 @@
 import json
 import logging
-from typing import Optional
 
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.config import settings
-from src.models.schemas import RawArticle, ParsedArticle
+from src.models.schemas import ParsedArticle, RawArticle
 from src.processing.prompts import EXTRACTION_SYSTEM, extraction_user
 
 logger = logging.getLogger(__name__)

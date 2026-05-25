@@ -1,7 +1,5 @@
 import logging
-from datetime import datetime, timezone
-from email.utils import parsedate_to_datetime
-from typing import Optional
+from datetime import UTC, datetime
 
 import aiohttp
 import feedparser
@@ -17,7 +15,7 @@ class RSSAdapter(FeedAdapter):
 
     source_name = "rss"
 
-    def __init__(self, feed_url: str, source_name: Optional[str] = None) -> None:
+    def __init__(self, feed_url: str, source_name: str | None = None) -> None:
         self._feed_url = feed_url
         if source_name:
             self.source_name = source_name
@@ -55,7 +53,7 @@ class RSSAdapter(FeedAdapter):
         return articles
 
 
-def _get_author(entry) -> Optional[str]:
+def _get_author(entry) -> str | None:
     if "author" in entry:
         return entry.author
     authors = entry.get("authors", [])
@@ -64,12 +62,12 @@ def _get_author(entry) -> Optional[str]:
     return None
 
 
-def _parse_dt(entry) -> Optional[datetime]:
+def _parse_dt(entry) -> datetime | None:
     for field in ("published_parsed", "updated_parsed"):
         value = entry.get(field)
         if value:
             import time
-            return datetime.fromtimestamp(time.mktime(value), tz=timezone.utc)
+            return datetime.fromtimestamp(time.mktime(value), tz=UTC)
     return None
 
 

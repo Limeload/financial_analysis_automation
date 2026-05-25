@@ -1,4 +1,3 @@
-from typing import Optional, Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -6,7 +5,7 @@ from sqlalchemy import select
 from src.api.dependencies import require_api_key
 from src.models.stock import Stock, StockMetrics
 from src.research.nl_search import NLSearchEngine, _row_to_dict
-from src.research.screener import screen, SORT_FIELDS
+from src.research.screener import SORT_FIELDS, screen
 from src.storage.database import get_session
 
 router = APIRouter(prefix="/stocks", tags=["stocks"])
@@ -14,7 +13,7 @@ router = APIRouter(prefix="/stocks", tags=["stocks"])
 _AUTH = {401: {"description": "Missing or invalid X-API-Key"}}
 _NOT_FOUND = {404: {"description": "Ticker not found"}}
 
-_engine: Optional[NLSearchEngine] = None
+_engine: NLSearchEngine | None = None
 
 
 def _get_engine() -> NLSearchEngine:
@@ -60,18 +59,18 @@ async def nl_search(
     responses=_AUTH,
 )
 async def screen_stocks(
-    sector: Optional[str] = Query(None, description="e.g. Technology, Healthcare, Financials"),
-    industry: Optional[str] = Query(None, description="Partial match, e.g. 'semiconductor'"),
-    exchange: Optional[str] = Query(None, description="NYSE, NMS (NASDAQ), etc."),
-    min_market_cap: Optional[int] = Query(None, description="Minimum market cap in USD"),
-    max_market_cap: Optional[int] = Query(None, description="Maximum market cap in USD"),
-    min_volume: Optional[int] = Query(None, description="Minimum daily volume"),
-    max_volume: Optional[int] = Query(None, description="Maximum daily volume"),
-    min_price: Optional[float] = Query(None, description="Minimum share price"),
-    max_price: Optional[float] = Query(None, description="Maximum share price"),
-    min_pe: Optional[float] = Query(None, description="Minimum trailing P/E ratio"),
-    max_pe: Optional[float] = Query(None, description="Maximum trailing P/E ratio"),
-    min_dividend_yield: Optional[float] = Query(None, description="Minimum dividend yield (0.02 = 2%)"),
+    sector: str | None = Query(None, description="e.g. Technology, Healthcare, Financials"),
+    industry: str | None = Query(None, description="Partial match, e.g. 'semiconductor'"),
+    exchange: str | None = Query(None, description="NYSE, NMS (NASDAQ), etc."),
+    min_market_cap: int | None = Query(None, description="Minimum market cap in USD"),
+    max_market_cap: int | None = Query(None, description="Maximum market cap in USD"),
+    min_volume: int | None = Query(None, description="Minimum daily volume"),
+    max_volume: int | None = Query(None, description="Maximum daily volume"),
+    min_price: float | None = Query(None, description="Minimum share price"),
+    max_price: float | None = Query(None, description="Maximum share price"),
+    min_pe: float | None = Query(None, description="Minimum trailing P/E ratio"),
+    max_pe: float | None = Query(None, description="Maximum trailing P/E ratio"),
+    min_dividend_yield: float | None = Query(None, description="Minimum dividend yield (0.02 = 2%)"),
     sort_by: str = Query("market_cap", description="Field to sort by"),
     sort_dir: str = Query("desc", description="asc or desc"),
     page: int = Query(1, ge=1),

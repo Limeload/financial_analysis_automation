@@ -1,18 +1,17 @@
 """Persist analysis results and publish to Redis."""
 import json
 import logging
-from typing import Optional
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.analysis import ArticleAnalysis, ArticleCompanySentiment
 
 logger = logging.getLogger(__name__)
 
 
-async def save_analysis(session: AsyncSession, data: dict) -> Optional[int]:
+async def save_analysis(session: AsyncSession, data: dict) -> int | None:
     """
     Upsert one analysis record + its company sentiments.
     Returns the analysis ID, or None if this article was already analysed.
@@ -70,7 +69,7 @@ async def publish_analysis(redis, data: dict, analysis_id: int) -> None:
     await redis.publish("article-analyses", payload)
 
 
-def _clamp(v) -> Optional[float]:
+def _clamp(v) -> float | None:
     if v is None:
         return None
     try:
