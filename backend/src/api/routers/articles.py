@@ -84,11 +84,12 @@ async def get_article(
     _: str = Depends(require_api_key),
 ):
     from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
 
     from src.models.article import Article
     async with get_session() as session:
         result = await session.execute(
-            select(Article).where(Article.id == article_id)
+            select(Article).options(selectinload(Article.tags)).where(Article.id == article_id)
         )
         article = result.scalar_one_or_none()
     if article is None:

@@ -13,6 +13,7 @@ import type {
 } from "./types";
 
 const BASE = "/api";
+export const API_KEY = process.env.NEXT_PUBLIC_API_KEY ?? "dev-secret-key-1";
 
 async function get<T>(path: string, params?: Record<string, string | number | boolean | undefined>): Promise<T> {
   const url = new URL(BASE + path, typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
@@ -21,7 +22,7 @@ async function get<T>(path: string, params?: Record<string, string | number | bo
       if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
     });
   }
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), { headers: { "X-API-Key": API_KEY } });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.json();
 }

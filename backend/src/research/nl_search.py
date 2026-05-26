@@ -94,7 +94,7 @@ class NLSearchEngine:
         return {
             "query": query,
             "reasoning": parsed.get("reasoning", ""),
-            "results": stocks,
+            "stocks": stocks,
             "total": len(stocks),
         }
 

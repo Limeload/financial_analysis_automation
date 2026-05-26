@@ -11,6 +11,8 @@ class Settings(BaseSettings):
 
     # News feeds
     thenewsapi_key: str = ""
+    newsapi_key: str = ""
+    mediastack_api: str = ""
 
     # LLM
     anthropic_api_key: str = ""

@@ -8,6 +8,7 @@ from sqlalchemy import and_, desc, func, select
 from src.api.dependencies import require_api_key
 from src.config import settings
 from src.models.analysis import EVENT_TYPES, ArticleAnalysis, ArticleCompanySentiment
+from src.models.article import Article
 from src.storage.database import get_session
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
@@ -80,8 +81,9 @@ async def get_company_sentiment(
 
     async with get_session() as session:
         q = (
-            select(ArticleCompanySentiment, ArticleAnalysis)
+            select(ArticleCompanySentiment, ArticleAnalysis, Article)
             .join(ArticleAnalysis, ArticleCompanySentiment.analysis_id == ArticleAnalysis.id)
+            .join(Article, ArticleCompanySentiment.article_id == Article.id)
             .where(
                 and_(
                     ArticleCompanySentiment.ticker == ticker,
@@ -114,12 +116,15 @@ async def get_company_sentiment(
         "page_size": page_size,
         "items": [
             {
-                **_fmt_sentiment(s),
                 "article_id": s.article_id,
+                "title": art.title,
+                "published_at": art.published_at.isoformat() if art.published_at else None,
+                "sentiment": s.sentiment,
+                "sentiment_score": float(s.sentiment_score) if s.sentiment_score else 0.0,
+                "reason": s.reason,
                 "event_type": a.event_type,
-                "processed_at": a.processed_at.isoformat(),
             }
-            for s, a in rows
+            for s, a, art in rows
         ],
     }
 
@@ -163,14 +168,17 @@ async def get_company_summary(
 
     counts = {r.sentiment: {"count": r.count, "avg_score": round(float(r.avg_score), 3)} for r in rows}
     total = sum(v["count"] for v in counts.values())
+    weighted_score = round(
+        sum(v["avg_score"] * v["count"] for v in counts.values()) / total, 3
+    ) if total else 0.0
     return {
         "ticker": ticker,
         "days": days,
-        "total_mentions": total,
-        "breakdown": counts,
-        "overall_score": round(
-            sum(v["avg_score"] * v["count"] for v in counts.values()) / total, 3
-        ) if total else None,
+        "total": total,
+        "positive": counts.get("positive", {}).get("count", 0),
+        "negative": counts.get("negative", {}).get("count", 0),
+        "neutral": counts.get("neutral", {}).get("count", 0),
+        "weighted_score": weighted_score,
     }
 
 
@@ -195,20 +203,26 @@ async def list_events(
     since = datetime.now(UTC) - timedelta(days=days)
 
     async with get_session() as session:
-        q = select(ArticleAnalysis).where(ArticleAnalysis.processed_at >= since)
+        q = (
+            select(ArticleAnalysis, Article)
+            .join(Article, ArticleAnalysis.article_id == Article.id)
+            .where(ArticleAnalysis.processed_at >= since)
+        )
         if event_type:
             q = q.where(ArticleAnalysis.event_type == event_type)
 
         total = (await session.execute(select(func.count()).select_from(q.subquery()))).scalar_one()
-        analyses = (
+        rows = (
             await session.execute(
                 q.order_by(desc(ArticleAnalysis.processed_at))
                 .offset((page - 1) * page_size)
                 .limit(page_size)
             )
-        ).scalars().all()
+        ).all()
 
-        # Fetch associated companies in one query
+        analyses = [r[0] for r in rows]
+        articles_by_id = {r[1].id: r[1] for r in rows}
+
         ids = [a.id for a in analyses]
         sents = (
             await session.execute(
@@ -218,9 +232,11 @@ async def list_events(
             )
         ).scalars().all()
 
-    sent_by_analysis: dict[int, list] = {}
+    tickers_by_analysis: dict[int, list[str]] = {}
     for s in sents:
-        sent_by_analysis.setdefault(s.analysis_id, []).append(_fmt_sentiment(s))
+        tickers_by_analysis.setdefault(s.analysis_id, []).append(
+            s.ticker or s.company_name or ""
+        )
 
     return {
         "total": total,
@@ -229,10 +245,13 @@ async def list_events(
         "items": [
             {
                 "article_id": a.article_id,
+                "title": articles_by_id[a.article_id].title,
+                "published_at": articles_by_id[a.article_id].published_at.isoformat()
+                    if articles_by_id[a.article_id].published_at else None,
+                "source": articles_by_id[a.article_id].source,
                 "event_type": a.event_type,
                 "event_confidence": float(a.event_confidence) if a.event_confidence else None,
-                "processed_at": a.processed_at.isoformat(),
-                "companies": sent_by_analysis.get(a.id, []),
+                "companies": tickers_by_analysis.get(a.id, []),
             }
             for a in analyses
         ],

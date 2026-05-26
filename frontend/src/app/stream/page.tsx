@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { wsUrl } from "@/lib/api";
+import { wsUrl, API_KEY } from "@/lib/api";
 import { fmtRelative, eventLabel, sentimentColor } from "@/lib/utils";
 import { EVENT_TYPES, type EventType } from "@/lib/types";
 import Card from "@/components/shared/Card";
@@ -36,7 +36,7 @@ export default function StreamPage() {
   pausedRef.current = paused;
 
   const connect = useCallback(() => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ api_key: API_KEY });
     if (filterTicker) params.set("ticker", filterTicker.toUpperCase());
     if (filterEvent) params.set("event_type", filterEvent);
 

@@ -97,7 +97,7 @@ async def screen_stocks(
             page=page,
             page_size=page_size,
         )
-    return {"items": results, "total": total, "page": page, "page_size": page_size}
+    return {"stocks": results, "total": total, "page": page, "page_size": page_size}
 
 
 @router.get(

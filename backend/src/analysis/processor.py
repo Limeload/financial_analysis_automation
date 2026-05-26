@@ -51,9 +51,13 @@ class ArticleAnalyzer:
         body: str | None,
         summary: str | None,
     ) -> dict:
-        user_msg = analysis_user(title, body, summary)
-        raw = await self._call(user_msg)
-        data = _safe_parse(raw)
+        try:
+            user_msg = analysis_user(title, body, summary)
+            raw = await self._call(user_msg)
+            data = _safe_parse(raw)
+        except Exception as exc:
+            logger.warning("LLM analysis failed (%s), saving with defaults", exc)
+            data = {"companies": [], "event_type": "other", "event_confidence": 0.0}
         data["article_id"] = article_id
         return data
 

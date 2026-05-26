@@ -25,9 +25,13 @@ class LLMParser:
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=10))
     async def parse(self, raw: RawArticle) -> ParsedArticle:
-        user_msg = extraction_user(raw.title, raw.body)
-        raw_json = await self._call(user_msg)
-        data = _safe_parse(raw_json)
+        try:
+            user_msg = extraction_user(raw.title, raw.body)
+            raw_json = await self._call(user_msg)
+            data = _safe_parse(raw_json)
+        except Exception as exc:
+            logger.warning("LLM enrichment failed (%s), saving article without enrichment", exc)
+            data = {}
         return ParsedArticle(
             **raw.model_dump(),
             summary=data.get("summary"),

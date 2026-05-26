@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import selectinload
 
 from src.config import settings
 from src.models.article import Article, ArticleTag
@@ -81,7 +82,8 @@ async def get_articles(
     total = (await session.execute(count_q)).scalar_one()
     rows = (
         await session.execute(
-            base.order_by(desc(Article.published_at))
+            base.options(selectinload(Article.tags))
+            .order_by(desc(Article.published_at))
             .offset((page - 1) * page_size)
             .limit(page_size)
         )

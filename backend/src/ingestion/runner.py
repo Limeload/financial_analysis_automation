@@ -8,6 +8,8 @@ import sys
 
 from src.config import settings
 from src.ingestion.kafka_producer import ArticleProducer
+from src.ingestion.mediastack import MediastackAdapter
+from src.ingestion.newsapi import NewsAPIAdapter
 from src.ingestion.rss import RSSAdapter
 from src.ingestion.thenewsapi import TheNewsAPIAdapter
 
@@ -26,7 +28,21 @@ async def main() -> None:
     await producer.start()
 
     adapters = [
-        TheNewsAPIAdapter(api_key=settings.thenewsapi_key),
+        *(
+            [TheNewsAPIAdapter(api_key=settings.thenewsapi_key)]
+            if settings.thenewsapi_key
+            else []
+        ),
+        *(
+            [NewsAPIAdapter(api_key=settings.newsapi_key)]
+            if settings.newsapi_key
+            else []
+        ),
+        *(
+            [MediastackAdapter(api_key=settings.mediastack_api)]
+            if settings.mediastack_api
+            else []
+        ),
         *[RSSAdapter(url, name) for url, name in RSS_FEEDS],
     ]
 
